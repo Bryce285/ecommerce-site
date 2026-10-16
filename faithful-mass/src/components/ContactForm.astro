@@ -1,0 +1,121 @@
+---
+import { PUBLIC_TURNSTILE_SITE_KEY } from "astro:env/client";
+
+interface Props {
+    topic: "contact" | "support";
+    messageLabel: string;
+    submitLabel: string;
+}
+
+const { topic, messageLabel, submitLabel } = Astro.props;
+
+const inputClass =
+    "w-full block mt-2 p-2 border border-white focus:border-[#FF82A9] focus:ring-2 focus:ring-[#FF82A9] focus:outline-hidden";
+---
+
+<!--
+    Filled in by the inline script below from the ?error= code that
+    /api/contact redirects back with. Hidden until there is something to say.
+-->
+<div
+    id="form-error"
+    role="alert"
+    class="hidden w-full mt-6 p-3 border border-[#FF82A9] text-[#FF82A9]"
+>
+</div>
+
+<form action="/api/contact" method="POST" class="flex flex-col items-start">
+    <input type="hidden" name="topic" value={topic} />
+
+    <!-- Honeypot: positioned off-screen, so only bots fill it in. -->
+    <div class="absolute -left-[9999px]" aria-hidden="true">
+        <label for="website">Website</label>
+        <input
+            type="text"
+            id="website"
+            name="website"
+            tabindex="-1"
+            autocomplete="off"
+        />
+    </div>
+
+    <label for="first_name" class="mt-4">First Name</label>
+    <input
+        type="text"
+        id="first_name"
+        name="first_name"
+        maxlength="100"
+        class={inputClass}
+    />
+
+    <label for="last_name" class="mt-4">Last Name</label>
+    <input
+        type="text"
+        id="last_name"
+        name="last_name"
+        maxlength="100"
+        class={inputClass}
+    />
+
+    <label for="email" class="mt-4">Email *</label>
+    <input
+        type="email"
+        id="email"
+        name="email"
+        required
+        maxlength="200"
+        class={inputClass}
+    />
+
+    <label for="message" class="mt-4">{messageLabel} *</label>
+    <textarea
+        id="message"
+        name="message"
+        rows="5"
+        cols="40"
+        required
+        maxlength="5000"
+        class={`h-full ${inputClass}`}></textarea>
+
+    <div
+        class="cf-turnstile mt-6"
+        data-sitekey={PUBLIC_TURNSTILE_SITE_KEY}
+        data-theme="dark"
+    >
+    </div>
+
+    <button
+        type="submit"
+        class="inline-block border border-white mt-6 p-2 hover:bg-gray-50/20"
+        >{submitLabel}</button
+    >
+</form>
+
+<script
+    is:inline
+    src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+    async
+    defer></script>
+
+<script is:inline>
+    (() => {
+        const messages = {
+            captcha:
+                "We could not verify that you are human. Please complete the check and try again.",
+            fields: "Please enter a valid email address and a message.",
+            send: "Something went wrong sending your message. Please try again in a moment.",
+        };
+
+        const code = new URLSearchParams(location.search).get("error");
+        if (!code) return;
+
+        const box = document.getElementById("form-error");
+        if (!box) return;
+
+        box.textContent = messages[code] ?? messages.send;
+        box.classList.remove("hidden");
+
+        // Drop the query string so a refresh does not re-show the message.
+        history.replaceState(null, "", location.pathname);
+    })();
+</script>

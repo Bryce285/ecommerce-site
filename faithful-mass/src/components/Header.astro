@@ -1,0 +1,80 @@
+---
+import Logo from '../assets/Logo.svg';
+import MobileMenu from './MobileMenu.svelte';
+import { products } from '../lib/mock-data';
+
+// Only what the menus need, since this is serialized into the mobile menu island.
+const menuProducts = products.map(({ slug, name }) => ({ slug, name }));
+---
+
+<header class="min-h-20 flex items-center sticky top-0 z-50">
+    <div class="blur-fade pointer-events-none absolute inset-x-0 top-0 -bottom-16" aria-hidden="true">
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+    </div>
+
+    <nav class="flex items-center gap-4 w-full relative z-10">
+        <MobileMenu client:load products={menuProducts} />
+
+        <div class="hidden min-[850px]:flex items-center gap-4">
+            <div class="group relative">
+                <a href="/products" class="ml-10 hover:text-gray-300">Products</a>
+                <div class="ml-10 flex flex-col whitespace-nowrap border-t absolute bg-black opacity-0 scale-95 -translate-y-1 pointer-events-none transition-all duration-200 ease-out group-hover:opacity-100 group-hover:scale-100 group-hover:translate-y-0 group-hover:pointer-events-auto">
+                    {menuProducts.map((product) => (
+                        <a href={`/products/${product.slug}`} class="m-2 hover:text-gray-300">{product.name}</a>
+                    ))}
+                </div>
+            </div>
+
+            <a href="/about" class="ml-10 hover:text-gray-300">About</a>
+        </div>
+
+        <a href="/">
+            <img src={Logo.src} alt="Company logo" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-auto">
+        </a>
+
+        <a href="/faq" class="hidden min-[850px]:inline ml-auto mr-10 hover:text-gray-300">Support/FAQ</a>
+    </nav>
+</header>
+
+<style>
+    /*
+      Progressive blur: five stacked backdrop-filter layers. Each one sits on top
+      of the previous, so their blurs compound, and each is masked to stop a bit
+      higher than the one below it. The result ramps from the full blur across
+      the header down to nothing at the bottom of the fade zone.
+    */
+    .blur-fade {
+        /* Fade zone lives below the header; keep in sync with -bottom-16 (4rem). */
+        --fade: 4rem;
+        --step: calc(var(--fade) / 6);
+    }
+
+    .blur-fade > div {
+        position: absolute;
+        inset: 0;
+        /* Layer k is solid until (k + 1) steps from the bottom and fully faded
+           (k - 1) steps from the bottom, so neighbouring ramps overlap. */
+        mask-image: linear-gradient(
+            to bottom,
+            #000 calc(100% - (var(--k) + 1) * var(--step)),
+            transparent calc(100% - (var(--k) - 1) * var(--step))
+        );
+        -webkit-mask-image: linear-gradient(
+            to bottom,
+            #000 calc(100% - (var(--k) + 1) * var(--step)),
+            transparent calc(100% - (var(--k) - 1) * var(--step))
+        );
+        backdrop-filter: blur(var(--b));
+        -webkit-backdrop-filter: blur(var(--b));
+    }
+
+    .blur-fade > div:nth-child(1) { --k: 1; --b: 0.5px; }
+    .blur-fade > div:nth-child(2) { --k: 2; --b: 1px; }
+    .blur-fade > div:nth-child(3) { --k: 3; --b: 2px; }
+    .blur-fade > div:nth-child(4) { --k: 4; --b: 4px; }
+    .blur-fade > div:nth-child(5) { --k: 5; --b: 8px; }
+</style>

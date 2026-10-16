@@ -1,0 +1,165 @@
+---
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import Layout from '../../layouts/Layout.astro';
+import ProductBgPhoto from '../../assets/Product_BG_Image.png';
+import ProductPhoto from '../../assets/Product_Image.png';
+import Image from 'astro/components/Image.astro';
+import { products } from '../../lib/mock-data';
+
+// The page shell is prerendered for each known slug. The product content itself
+// is fetched from /api/v1/products/:slug in the browser (see the script below).
+export function getStaticPaths() {
+    return products.map((p) => ({ params: { slug: p.slug } }));
+}
+
+const { slug } = Astro.params;
+---
+
+<Layout title="Product | Company Name" description="Product details.">
+    <Header />
+    <div data-product-root data-slug={slug}>
+        <div class="relative w-screen h-[50vh] min-h-150 overflow-hidden">
+            <Image
+                src={ProductBgPhoto}
+                alt=""
+                widths={[640, 1024, 1600, 2000, 2400]}
+                sizes="100vw"
+                loading="eager"
+                fetchpriority="high"
+                class="absolute inset-0 w-full h-full object-cover"
+            />
+            <div class="absolute inset-0 z-10 flex items-center justify-center gap-8 px-8 lg:px-16">
+                <div class="flex-1 max-w-xs text-left">
+                    <h1 data-field="name" class="font-display uppercase text-white text-[2.0vw] leading-none tracking-[-0.02em]">
+                        Loading&hellip;
+                    </h1>
+                    <p data-field="tagline" class="mt-4 text-white/80 leading-relaxed"></p>
+                    <p data-field="price" class="mt-4 text-white/80 text-lg leading-relaxed"></p>
+                    <button
+                        type="button"
+                        data-buy
+                        disabled
+                        class="inline-block border border-white mt-4 p-2 hover:bg-gray-50/20 disabled:opacity-50 disabled:hover:bg-transparent"
+                    >Buy Now</button>
+                    <p data-order-status role="status" class="mt-3 text-sm text-white/80"></p>
+                </div>
+                <Image
+                    src={ProductPhoto}
+                    alt="Product Name"
+                    widths={[320, 480, 640, 800]}
+                    sizes="40vw"
+                    loading="eager"
+                    fetchpriority="high"
+                    class="w-2/5 h-auto shrink-0"
+                />
+            </div>
+        </div>
+
+        <p data-product-error role="alert" class="hidden px-10 pt-10 text-[#FF82A9]"></p>
+
+        <div>
+            <div class="relative w-screen flex items-center p-10 overflow-hidden">
+                <div class="align-start w-1/2 p-5">
+                    <h2 class="font-display uppercase text-white text-[2.0vw] leading-none tracking-[-0.02em]">
+                        FEATURES
+                    </h2>
+                    <ul data-field="features" class="pt-6 list-disc pl-5"></ul>
+                </div>
+                <div class="align end w-1/2 p-5 flex justify-center">
+                    <p>PRODUCT VIDEO GOES HERE</p>
+                </div>
+            </div>
+            <div class="relative w-screen flex items-center p-10 overflow-hidden">
+                <div class="align-start w-1/2 p-5">
+                    <h2 class="font-display uppercase text-white text-[2.0vw] leading-none tracking-[-0.02em]">
+                        SEE IT IN ACTION
+                    </h2>
+                    <p class="pt-6">PRODUCT DEMOS GO HERE</p>
+                </div>
+            </div>
+            <div class="relative w-screen flex items-center p-10 overflow-hidden">
+                <div class="align-start p-5">
+                    <h2 class="font-display uppercase text-white text-[2.0vw] leading-none tracking-[-0.02em]">
+                        TECHNICAL DETAILS
+                    </h2>
+                    <ul data-field="technicalDetails" class="pt-6 list-disc pl-5"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <noscript><p class="px-10 pb-10">JavaScript is required to load product details.</p></noscript>
+    <Footer />
+</Layout>
+
+<script>
+    import type { ApiError, ItemResponse, Order, Product } from '../../lib/api-types';
+    import { formatPrice } from '../../lib/format';
+
+    const root = document.querySelector<HTMLElement>('[data-product-root]')!;
+    const slug = root.dataset.slug!;
+    const field = (name: string) => root.querySelector<HTMLElement>(`[data-field="${name}"]`)!;
+    const errorBox = root.querySelector<HTMLElement>('[data-product-error]')!;
+    const buyButton = root.querySelector<HTMLButtonElement>('[data-buy]')!;
+    const orderStatus = root.querySelector<HTMLElement>('[data-order-status]')!;
+
+    function fillList(el: HTMLElement, items: string[]) {
+        el.replaceChildren(
+            ...items.map((text) => {
+                const li = document.createElement('li');
+                li.textContent = text;
+                return li;
+            }),
+        );
+    }
+
+    async function errorMessage(res: Response): Promise<string> {
+        try {
+            return ((await res.json()) as ApiError).error.message;
+        } catch {
+            return `Request failed (${res.status}).`;
+        }
+    }
+
+    async function load() {
+        try {
+            const res = await fetch(`/api/v1/products/${encodeURIComponent(slug)}`);
+            if (!res.ok) throw new Error(await errorMessage(res));
+            const { data: product } = (await res.json()) as ItemResponse<Product>;
+
+            document.title = `${product.name} | Company Name`;
+            field('name').textContent = product.name;
+            field('tagline').textContent = product.tagline;
+            field('price').textContent = formatPrice(product.priceCents, product.currency);
+            fillList(field('features'), product.features);
+            fillList(field('technicalDetails'), product.technicalDetails);
+            buyButton.disabled = false;
+        } catch (err) {
+            field('name').textContent = 'Product unavailable';
+            errorBox.textContent = err instanceof Error ? err.message : 'Could not load this product.';
+            errorBox.classList.remove('hidden');
+        }
+    }
+
+    // Placeholder checkout: posts a fake order and shows the id that comes back.
+    buyButton.addEventListener('click', async () => {
+        buyButton.disabled = true;
+        orderStatus.textContent = 'Placing order…';
+        try {
+            const res = await fetch('/api/v1/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productSlug: slug, quantity: 1, email: 'customer@example.com' }),
+            });
+            if (!res.ok) throw new Error(await errorMessage(res));
+            const { data: order } = (await res.json()) as ItemResponse<Order>;
+            orderStatus.textContent = `Placeholder order created: ${order.id}`;
+        } catch (err) {
+            orderStatus.textContent = err instanceof Error ? err.message : 'Could not place the order.';
+        } finally {
+            buyButton.disabled = false;
+        }
+    });
+
+    load();
+</script>

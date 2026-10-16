@@ -1,0 +1,35 @@
+---
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Message Sent | Company Name" description="Your message has been sent.">
+    <Header />
+    <div class="flex flex-col items-center">
+        <div
+            class="bg-black w-1/2 min-h-screen flex flex-col px-12 pb-12 pt-20"
+        >
+            <h1 class="font-display uppercase tracking-[-0.03em] text-[3.0vw]">
+                Message Sent
+            </h1>
+            <p class="mt-2 text-white/80 leading-relaxed">
+                Thanks for getting in touch. Your message is on its way, and
+                we'll reply to the email address you gave us.
+            </p>
+            <div class="flex flex-row gap-4">
+                <a
+                    href="/"
+                    class="inline-block border border-white mt-6 p-2 hover:bg-gray-50/20"
+                    >Back to Home</a
+                >
+                <a
+                    href="/products"
+                    class="inline-block border border-white mt-6 p-2 hover:bg-gray-50/20"
+                    >Explore Products</a
+                >
+            </div>
+        </div>
+    </div>
+    <Footer />
+</Layout>

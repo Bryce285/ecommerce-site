@@ -1,0 +1,71 @@
+---
+import Header from "../../components/Header.astro";
+import Footer from "../../components/Footer.astro";
+import Layout from "../../layouts/Layout.astro";
+---
+
+<Layout title="Products | Company Name" description="Browse everything Company Name offers.">
+    <Header />
+    <div class="flex flex-col items-center">
+        <div
+            class="bg-black w-1/2 min-h-screen flex flex-col px-12 pb-12 pt-20"
+        >
+            <h1 class="font-display uppercase tracking-[-0.03em] text-[3.0vw]">
+                Products
+            </h1>
+            <p data-products-status role="status" class="mt-4 text-white/80">Loading&hellip;</p>
+            <ul data-products class="mt-4 flex flex-col gap-6"></ul>
+            <noscript><p class="mt-4">JavaScript is required to load the product list.</p></noscript>
+        </div>
+    </div>
+    <Footer />
+</Layout>
+
+<script>
+    import type { ApiError, ListResponse, Product } from '../../lib/api-types';
+    import { formatPrice } from '../../lib/format';
+
+    const list = document.querySelector<HTMLElement>('[data-products]')!;
+    const status = document.querySelector<HTMLElement>('[data-products-status]')!;
+
+    function card(product: Product): HTMLLIElement {
+        const li = document.createElement('li');
+
+        const link = document.createElement('a');
+        link.href = `/products/${encodeURIComponent(product.slug)}`;
+        link.className = 'block border border-white p-4 hover:bg-gray-50/20';
+
+        const name = document.createElement('h2');
+        name.className = 'font-display uppercase tracking-[-0.03em] text-[1.4vw]';
+        name.textContent = product.name;
+
+        const tagline = document.createElement('p');
+        tagline.className = 'mt-2 text-white/80';
+        tagline.textContent = product.tagline;
+
+        const price = document.createElement('p');
+        price.className = 'mt-2';
+        price.textContent = formatPrice(product.priceCents, product.currency);
+
+        link.append(name, tagline, price);
+        li.append(link);
+        return li;
+    }
+
+    async function load() {
+        try {
+            const res = await fetch('/api/v1/products');
+            if (!res.ok) {
+                const body = (await res.json().catch(() => null)) as ApiError | null;
+                throw new Error(body?.error.message ?? `Request failed (${res.status}).`);
+            }
+            const { data } = (await res.json()) as ListResponse<Product>;
+            list.replaceChildren(...data.map(card));
+            status.textContent = data.length ? '' : 'No products yet.';
+        } catch (err) {
+            status.textContent = err instanceof Error ? err.message : 'Could not load products.';
+        }
+    }
+
+    load();
+</script>
