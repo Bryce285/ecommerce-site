@@ -3,7 +3,7 @@
 This repo is a generalized/template version of an ecommerce site I have been building. It has a placeholder REST API and backend with some typical endpoints you might find on this kind of site. 
 
 <img width="1920" height="1080" alt="site" src="https://github.com/user-attachments/assets/bff24d69-fec7-41bd-9d8f-fb8260a49c60" />
-*<sub>A short demonstration of part of site (may take some time to load).</sub>*
+<sub>A short demonstration of part of site (may take some time to load).</sub>
 
 ## Getting started
 
