@@ -1,4 +1,4 @@
-# Company Name
+# Description
 
 This repo is a generalized/template version of an ecommerce site I have been building. It has a placeholder REST API and backend with some typical endpoints you might find on this kind of site. 
 
